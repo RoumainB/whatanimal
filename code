@@ -1,0 +1,373 @@
+'use strict';
+const Alexa = require('alexa-sdk');
+const APP_ID = undefined;
+
+/***********
+Data: Customize the data below as you please.
+***********/
+
+const SKILL_NAME = "What animal I am";
+const HELP_MESSAGE_BEFORE_START = "Answer me 5 questions, and I will tell you which animal you are. DO you want to start the game?";
+const HELP_MESSAGE_AFTER_START = "Answer with yes or no, and I'll telle you the result at the end.";
+const HELP_REPROMPT = "You will know which animal you are at the end of the game.";
+const STOP_MESSAGE = "Fine, you'll know the truth next time!";
+const CANCEL_MESSAGE = "Right, let's start over.";
+const MISUNDERSTOOD_INSTRUCTIONS_ANSWER = "Please answer with yes or no.";
+
+const WELCOME_MESSAGE = "Welcome to what animal I am. I can tell you which animal you are by asking you five questions. Are you ready to know the truth?";
+const INITIAL_QUESTION_INTROS = [
+  "Great! Let's start!",
+  "Ok, here comes your first question!",
+  "Right!",
+];
+const QUESTION_INTROS = [
+  "ok",
+  "just like me",
+  "hmm hmm",
+  "So do I",
+  "I would have said that too.",
+  "Of course.",
+  "I knew it.",
+  "this is what I've been told",
+  "So true.",
+  "I agree."
+];
+const UNDECISIVE_RESPONSES = [
+  "<say-as interpret-as='interjection'>No problem</say-as>. I'll just choose for you.",
+  "<say-as interpret-as='interjection'>ok</say-as>. I answered for you.",
+  "<say-as interpret-as='interjection'>ok</say-as>. We will just move on then.",
+  "<say-as interpret-as='interjection'>oh dear</say-as>. And about this one?",
+];
+const RESULT_MESSAGE = "You are, you are, you are "; // the name of the result is inserted here.
+const PLAY_AGAIN_REQUEST = "That was it. Do you want to play again?";
+
+const animalList = {
+  dog: {
+    name: "a dog",
+    display_name: "Dog",
+    audio_message: "Dogs like to spend time outside and they love to play. ",
+    description: "They prefer to eat meat than fruits or vetetables.",
+    img: {
+      smallImageUrl: "https://ibb.co/KKZGLX4",
+      largeImageUrl: "https://ibb.co/KKZGLX4"
+    }
+  },
+  cat: {
+    name: "a cat",
+    display_name: "Cat",
+    audio_message: "Cats are solitaire but like to be stroked a lot by people. So they aren’t as solitaire as that. ",
+    description: "They are quit relaxed and like to play as well.",
+    img: {
+      smallImageUrl: "https://ibb.co/KKZGLX4",
+      largeImageUrl: "https://ibb.co/KKZGLX4"
+    }
+  },
+  horse: {
+    name: "a horse",
+    display_name: "Horse",
+    audio_message: "Horses love nature and love to spend time outside",
+    description: "Horses love nature and love to spend time outside. They are always up for a walk!",
+    img: {
+      smallImageUrl: "https://ibb.co/BP8Dj5P",
+      largeImageUrl: "https://ibb.co/BP8Dj5P"
+    }
+  },
+  monkey: {
+    name: "a monkey",
+    display_name: "Monkey",
+    audio_message: "Hey monkey ! Like you, monkeys like to spend time with others and have a lot of fun. ",
+    description: "Hey monkey ! Like you, monkeys like to spend time with others and have a lot of fun. They like as well time spent in the nature.",
+    img: {
+      smallImageUrl: "https://ibb.co/1dJK8Yg",
+      largeImageUrl: "https://ibb.co/1dJK8Yg"
+    }
+  },
+  sloth: {
+    name: "a sloth",
+    display_name: "Sloth",
+    audio_message: "Oh dear, you’re a sloth ! But hey ! Sloth aren’t really lasy. This is just that they’re taking their time to what they’re doing. ",
+    description: "Oh dear, you’re a sloth ! But hey ! Sloth aren’t really lasy. This is just that they’re taking their time to what they’re doing.",
+    img: {
+      smallImageUrl: "https://ibb.co/d7LtCh8",
+      largeImageUrl: "https://ibb.co/d7LtCh8"
+    }
+  }
+};
+
+const questions = [
+  {
+    question: "Do you like to out for a walk?",
+    points: {
+      dog: 5,
+      cat: 2,
+      horse: 3,
+      monkey: 4,
+      sloth: 4
+    }
+  },
+  {
+    question: "Do you like to spend time with others?",
+    points: {
+      dog: 5,
+      cat: 3,
+      horse: 3,
+      monkey: 3,
+      sloth: 1
+    }
+  },
+  {
+    question: "Are you solitaire?",
+    points: {
+      dog: 0,
+      cat: 5,
+      horse: 2,
+      monkey: 0,
+      sloth: 5
+    }
+  },
+    {
+    question: "Do you like nature?",
+    points: {
+      dog: 5,
+      cat: 2,
+      horse: 5,
+      monkey: 5,
+      sloth: 4
+    }
+  },
+    {
+    question: "Are you talking a lot?",
+    points: {
+      dog: 3,
+      cat: 2,
+      horse: 0,
+      monkey: 5,
+      sloth: 0
+    }
+  },
+    {
+    question: "Would you like to work in a circus?",
+    points: {
+      dog: 4,
+      cat: 2,
+      horse: 4,
+      monkey: 4,
+      sloth: 0
+    }
+  },
+  {
+    question: "Do you like to play?",
+    points: {
+      dog: 5,
+      cat: 4,
+      horse: 1,
+      monkey: 4,
+      sloth: 1
+    }
+  },
+  {
+    question: "Do you like to be stroked?",
+    points: {
+      dog: 4,
+      cat: 5,
+      horse: 3,
+      monkey: 3,
+      sloth: 0
+    }
+  },
+  {
+    question: "Are you sleeping a lot?",
+    points: {
+      dog: 3,
+      cat: 5,
+      horse: 1,
+      monkey: 3,
+      sloth: 5
+    }
+  },
+  {
+    question: "Do you like fruits & vegetables ?",
+    points: {
+      dog: 0,
+      cat: 0,
+      horse: 3,
+      monkey: 4,
+      sloth: 4
+    }
+  }
+];
+
+/***********
+Execution Code: Avoid editing the code below if you don't know JavaScript.
+***********/
+
+// Private methods (this is the actual code logic behind the app)
+
+const _initializeApp = handler => {
+  // Set the progress to -1 one in the beginning
+  handler.attributes['questionProgress'] = -1;
+  // Assign 0 points to each animal
+  var initialPoints = {};
+  Object.keys(animalList).forEach(animal => initialPoints[animal] = 0);
+  handler.attributes['animalPoints'] = initialPoints;
+};
+
+const _nextQuestionOrResult = (handler, prependMessage = '') => {
+  if(handler.attributes['questionProgress'] >= (questions.length - 1)){
+    handler.handler.state = states.RESULTMODE;
+    handler.emitWithState('ResultIntent', prependMessage);
+  }else{
+    handler.emitWithState('NextQuestionIntent', prependMessage);
+  }
+};
+
+const _applyAnimalPoints = (handler, calculate) => {
+  const currentPoints = handler.attributes['animalPoints'];
+  const pointsToAdd = questions[handler.attributes['questionProgress']].points;
+
+  handler.attributes['animalPoints'] = Object.keys(currentPoints).reduce((newPoints, animal) => {
+    newPoints[animal] = calculate(currentPoints[animal], pointsToAdd[animal]);
+    return newPoints;
+  }, currentPoints);
+};
+
+const _randomQuestionIntro = handler => {
+  if(handler.attributes['questionProgress'] == 0){
+    // return random initial question intro if it's the first question:
+    return _randomOfArray(INITIAL_QUESTION_INTROS);
+  }else{
+    // Assign all question intros to remainingQuestionIntros on the first execution:
+    var remainingQuestionIntros = remainingQuestionIntros || QUESTION_INTROS;
+    // randomQuestion will return 0 if the remainingQuestionIntros are empty:
+    let randomQuestion = remainingQuestionIntros.splice(_randomIndexOfArray(remainingQuestionIntros), 1);
+    // Remove random Question from rameining question intros and return the removed question. If the remainingQuestions are empty return the first question:
+    return randomQuestion ? randomQuestion : QUESTION_INTROS[0];
+  }
+};
+
+const _randomIndexOfArray = (array) => Math.floor(Math.random() * array.length);
+const _randomOfArray = (array) => array[_randomIndexOfArray(array)];
+const _adder = (a, b) => a + b;
+const _subtracter = (a, b) => a - b;
+
+// Handle user input and intents:
+
+const states = {
+  QUIZMODE: "_QUIZMODE",
+  RESULTMODE: "_RESULTMODE"
+}
+
+const newSessionHandlers = {
+  'NewSession': function(){
+    _initializeApp(this);
+    this.emit(':askWithCard', WELCOME_MESSAGE, SKILL_NAME, WELCOME_MESSAGE);
+    //                         ^speechOutput,   ^cardTitle, ^cardContent,   ^imageObj
+  },
+  'YesIntent': function(){
+    this.handler.state = states.QUIZMODE;
+    _nextQuestionOrResult(this);
+  },
+  'NoIntent': function(){
+    this.emitWithState('AMAZON.StopIntent');
+  },
+  'AMAZON.HelpIntent': function(){
+    this.emit(':askWithCard', HELP_MESSAGE_BEFORE_START, HELP_REPROMPT, SKILL_NAME);
+  },
+  'AMAZON.CancelIntent': function(){
+    this.emitWithState('AMAZON.StopIntent');
+  },
+  'AMAZON.StopIntent': function(){
+    this.emit(':tellWithCard', STOP_MESSAGE, SKILL_NAME, STOP_MESSAGE);
+  },
+  'Unhandled': function(){
+    this.emit(':ask', MISUNDERSTOOD_INSTRUCTIONS_ANSWER);
+  }
+};
+
+
+const quizModeHandlers = Alexa.CreateStateHandler(states.QUIZMODE, {
+  'NextQuestionIntent': function(prependMessage = ''){
+    // Increase the progress of asked questions by one:
+    this.attributes['questionProgress']++;
+    // Reference current question to read:
+    var currentQuestion = questions[this.attributes['questionProgress']].question;
+
+    this.emit(':askWithCard', `${prependMessage} ${_randomQuestionIntro(this)} ${currentQuestion}`, HELP_MESSAGE_AFTER_START, SKILL_NAME, currentQuestion);
+    //                        ^speechOutput                                                         ^repromptSpeech           ^cardTitle  ^cardContent     ^imageObj
+  },
+  'YesIntent': function(){
+    _applyAnimalPoints(this, _adder);
+    // Ask next question or return results when answering the last question:
+    _nextQuestionOrResult(this);
+  },
+  'NoIntent': function(){
+    // User is responding to a given question
+    _applyAnimalPoints(this, _subtracter);
+    _nextQuestionOrResult(this);
+  },
+  'UndecisiveIntent': function(){
+    // Randomly apply
+    Math.round(Math.random()) ? _applyAnimalPoints(this, _adder) : _applyAnimalPoints(this, _subtracter);
+    _nextQuestionOrResult(this, _randomOfArray(UNDECISIVE_RESPONSES));
+  },
+  'AMAZON.RepeatIntent': function(){
+    var currentQuestion = questions[this.attributes['questionProgress']].question;
+
+    this.emit(':askWithCard', currentQuestion, HELP_MESSAGE_AFTER_START, SKILL_NAME, currentQuestion);
+    //                        ^speechOutput    ^repromptSpeech           ^cardTitle ^cardContent     ^imageObj
+  },
+  'AMAZON.HelpIntent': function(){
+    this.emit(':askWithCard', HELP_MESSAGE_AFTER_START, HELP_REPROMPT, SKILL_NAME);
+  },
+  'AMAZON.CancelIntent': function(){
+    this.emit(':tellWithCard', CANCEL_MESSAGE, SKILL_NAME, CANCEL_MESSAGE);
+  },
+  'AMAZON.StopIntent': function(){
+    this.emit(':tellWithCard', STOP_MESSAGE, SKILL_NAME, STOP_MESSAGE);
+  },
+  'Unhandled': function(){
+    this.emit(':ask', MISUNDERSTOOD_INSTRUCTIONS_ANSWER);
+  }
+});
+
+
+const resultModeHandlers = Alexa.CreateStateHandler(states.RESULTMODE, {
+  'ResultIntent': function(prependMessage = ''){
+    // Determine the highest value:
+    const animalPoints = this.attributes['animalPoints'];
+    const result = Object.keys(animalPoints).reduce((o, i) => animalPoints[o] > animalPoints[i] ? o : i);
+    const resultMessage = `${prependMessage} ${RESULT_MESSAGE} ${animalList[result].name}. ${animalList[result].audio_message}. ${PLAY_AGAIN_REQUEST}`;
+
+    this.emit(':askWithCard', resultMessage, PLAY_AGAIN_REQUEST, animalList[result].display_name, animalList[result].description, animalList[result].img);
+    //                        ^speechOutput  ^repromptSpeech     ^cardTitle                       ^cardContent                    ^imageObj
+  },
+  'YesIntent': function(){
+    _initializeApp(this);
+    this.handler.state = states.QUIZMODE;
+    _nextQuestionOrResult(this);
+  },
+  'NoIntent': function(){
+    this.emitWithState('AMAZON.StopIntent');
+  },
+  'AMAZON.HelpIntent': function(){
+    this.emit(':askWithCard', HELP_MESSAGE_AFTER_START, HELP_REPROMPT, SKILL_NAME);
+  },
+  'AMAZON.CancelIntent': function(){
+    this.emitWithState('AMAZON.StopIntent');
+  },
+  'AMAZON.StopIntent': function(){
+    this.emit(':tellWithCard', STOP_MESSAGE, SKILL_NAME, STOP_MESSAGE);
+  },
+  'Unhandled': function(){
+    this.emit(':ask', MISUNDERSTOOD_INSTRUCTIONS_ANSWER);
+  }
+});
+
+
+
+exports.handler = (event, context, callback) => {
+  const alexa = Alexa.handler(event, context);
+  alexa.APP_ID = APP_ID;
+  alexa.registerHandlers(newSessionHandlers, quizModeHandlers, resultModeHandlers);
+  alexa.execute();
+};
