@@ -7,7 +7,7 @@ Data: Customize the data below as you please.
 ***********/
 
 const SKILL_NAME = "What animal I am";
-const HELP_MESSAGE_BEFORE_START = "Answer me 5 questions, and I will tell you which animal you are. DO you want to start the game?";
+const HELP_MESSAGE_BEFORE_START = "Answer me 5 questions, and I will tell you which animal you are. Do you want to start the game?";
 const HELP_MESSAGE_AFTER_START = "Answer with yes or no, and I'll telle you the result at the end.";
 const HELP_REPROMPT = "You will know which animal you are at the end of the game.";
 const STOP_MESSAGE = "Fine, you'll know the truth next time!";
